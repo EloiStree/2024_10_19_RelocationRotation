@@ -44,7 +44,7 @@ namespace Eloi {
         }
         public static void GetLocalToWorld_DirectionalPoint(in Vector3 localPosition, in Quaternion localRotation, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 worldPosition, out Quaternion worldRotation)
         {
-            worldRotation = localRotation * rotationReference;
+            worldRotation = rotationReference* localRotation ;
             worldPosition = (rotationReference * localPosition) + (positionReference);
         }
 
