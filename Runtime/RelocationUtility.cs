@@ -1,11 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace Eloi { 
+namespace Eloi
+{
 
-    public class RelocationUtility 
+    public class RelocationUtility
     {
         public static void GetWorldToLocal_Point(in Vector3 worldPosition, in Transform rootReference, out Vector3 localPosition)
         {
@@ -17,12 +15,12 @@ namespace Eloi {
         {
             Vector3 p = rootReference.position;
             Quaternion r = rootReference.rotation;
-            GetLocalToWorld_Point(in localPosition, in p,in r, out worldPosition);
+            GetLocalToWorld_Point(in localPosition, in p, in r, out worldPosition);
         }
         public static void GetWorldToLocal_Point(in Vector3 worldPosition, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 localPosition) =>
             localPosition = Quaternion.Inverse(rotationReference) * (worldPosition - positionReference);
-        
-        public static void GetLocalToWorld_Point(in Vector3 localPosition, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 worldPosition)=>
+
+        public static void GetLocalToWorld_Point(in Vector3 localPosition, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 worldPosition) =>
             worldPosition = (rotationReference * localPosition) + (positionReference);
 
         public static void GetWorldToLocal_DirectionalPoint(in Vector3 worldPosition, in Quaternion worldRotation, in Transform rootReference, out Vector3 localPosition, out Quaternion localRotation)
@@ -39,14 +37,14 @@ namespace Eloi {
         }
         public static void GetWorldToLocal_DirectionalPoint(in Vector3 worldPosition, in Quaternion worldRotation, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 localPosition, out Quaternion localRotation)
         {
-            localRotation = Quaternion.Inverse(rotationReference)* worldRotation;
+            localRotation = Quaternion.Inverse(rotationReference) * worldRotation;
             localPosition = Quaternion.Inverse(rotationReference) * (worldPosition - positionReference);
         }
         public static void GetLocalToWorld_DirectionalPoint(in Vector3 localPosition, in Quaternion localRotation, in Vector3 positionReference, in Quaternion rotationReference, out Vector3 worldPosition, out Quaternion worldRotation)
         {
             /// I need to verify the commutativity of this code. 
             /// I think it was ok then had a bug in a game link to this methode and thr commutative property
-            worldRotation = rotationReference* localRotation ;
+            worldRotation = rotationReference * localRotation;
             worldPosition = (rotationReference * localPosition) + (positionReference);
         }
 
@@ -78,9 +76,9 @@ namespace Eloi {
             Quaternion whatToRotateRotation,
             Vector3 centerRotation,
             Quaternion rotationToApply,
-            out Vector3 newPosition, 
+            out Vector3 newPosition,
             out Quaternion newRotation)
-            
+
         {
             //Rotate the right point to in aim to reconstruct the forward direction
             Vector3 rightPoint = whatToRotatePosition + whatToRotateRotation * Vector3.right;
@@ -89,14 +87,14 @@ namespace Eloi {
             Vector3 centerToPointDirection = currentPointRelocate - centerRotation;
             Vector3 pointToRightDirection = rightPointRelocated - currentPointRelocate;
             Vector3 newForwardDirection = Vector3.Cross(pointToRightDirection, centerToPointDirection).normalized;
-            newPosition =currentPointRelocate;
-            newRotation= Quaternion.LookRotation(newForwardDirection, centerToPointDirection);
+            newPosition = currentPointRelocate;
+            newRotation = Quaternion.LookRotation(newForwardDirection, centerToPointDirection);
 
         }
 
 
         public static void RotateTargetAroundPointMath(
-            Vector3 postion, Quaternion rotation ,
+            Vector3 postion, Quaternion rotation,
             Vector3 center, Quaternion rotationFrom, Quaternion rotationTo,
             out Vector3 newPosition, out Quaternion newRotation)
         {
@@ -117,20 +115,23 @@ namespace Eloi {
 
         }
 
-        public static  void RotateTargetAroundPointMath(Transform whatToMove, Vector3 center, Quaternion rotationFrom, Quaternion rotationTo)
+        public static void RotateTargetAroundPointMath(Transform whatToMove, Vector3 center, Quaternion rotationFrom, Quaternion rotationTo)
         {
             RotateTargetAroundPointMath(
-                whatToMove.position, whatToMove.rotation, 
-                center, rotationFrom, rotationTo, 
+                whatToMove.position, whatToMove.rotation,
+                center, rotationFrom, rotationTo,
                 out Vector3 newPosition, out Quaternion newRotation);
             whatToMove.position = newPosition;
             whatToMove.rotation = newRotation;
-            
+
         }
+
 
 
         public static void RotateTargetAroundPointByCreatingEmpyPoint(Transform whatToMove, Vector3 centroide, Quaternion rotationFrom, Quaternion rotationTo)
         {
+            // THIS IS A CHEAT CODE THAT SHOULD NOT BE USED.
+            // I WILL LOOK LATER AT THE NORMAL MATH WAY TO DO IT
             Quaternion toRotate = rotationTo * Quaternion.Inverse(rotationFrom);
 
             Transform p = whatToMove.parent;
@@ -142,9 +143,72 @@ namespace Eloi {
             t.rotation *= toRotate;
             whatToMove.parent = p;
             if (Application.isPlaying)
-               GameObject.DestroyImmediate(g);
+                GameObject.DestroyImmediate(g);
             else
                 GameObject.Destroy(g);
         }
+
+
+        public static Quaternion GetQuaternionFromCartesianAxis(Vector3 rightDirection, Vector3 upDirection, Vector3 forwardDirection)
+        {
+            rightDirection.Normalize();
+            upDirection.Normalize();
+            forwardDirection.Normalize();
+            Matrix4x4 rotationMatrix = new Matrix4x4();
+            rotationMatrix.SetColumn(0, rightDirection);
+            rotationMatrix.SetColumn(1, upDirection);
+            rotationMatrix.SetColumn(2, forwardDirection);
+            Quaternion rotationQuaternion = rotationMatrix.rotation;
+            return rotationQuaternion;
+        }
+
+
+        public static bool IsLeftOf(Transform point, Transform reference)
+            => IsLeftOf(point.position, reference.position, reference.rotation);
+
+        public static bool IsRightOf(Transform point, Transform reference)
+            => IsRightOf(point.position, reference.position, reference.rotation);
+        public static bool IsAboveOf(Transform point, Transform reference)
+            => IsAboveOf(point.position, reference.position, reference.rotation);
+        public static bool IsBelowOf(Transform point, Transform reference)
+            => IsBelowOf(point.position, reference.position, reference.rotation);
+        public static bool IsFrontOf(Transform point, Transform reference)
+            => IsFrontOf(point.position, reference.position, reference.rotation);
+        public static bool IsBackOf(Transform point, Transform reference)
+            => IsBackOf(point.position, reference.position, reference.rotation);
+
+
+        public static bool IsLeftOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.x < 0;
+        }
+        public static bool IsRightOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.x > 0;
+        }
+        public static bool IsAboveOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.y > 0;
+        }
+        public static bool IsBelowOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.y < 0;
+        }
+
+        public static bool IsFrontOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.z > 0;
+        }
+        public static bool IsBackOf(Vector3 worldPoint, Vector3 anchorPoint, Quaternion anchorRotation)
+        {
+            GetWorldToLocal_Point(worldPoint, anchorPoint, anchorRotation, out Vector3 localPoint);
+            return localPoint.z < 0;
+        }
+
     }
 }
